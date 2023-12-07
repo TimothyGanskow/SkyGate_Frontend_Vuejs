@@ -39,21 +39,3 @@ axios.interceptors.response.use(resp => resp, async error => {
     return error;
 
 })
-
-// Response interceptor for API calls
-/* axios.interceptors.response.use((response) => {
-    return response
-}, async function (error) {
-
-    const originalRequest = error.config;
-    if (error.response.status === 500 && !originalRequest._retry) {
-        originalRequest._retry = true;
-        await axios.post(import.meta.env.VITE_API_REFRESH_API_KEY, {
-            token: sessionStorage.getItem("refresh")
-        }).then(resp =>
-            sessionStorage.setItem('session', resp.data.sessionToken))
-        axios.defaults.headers.common['Authorization'] = 'Bearer ' + sessionStorage.getItem("session");
-        return axios(originalRequest);
-    }
-    return Promise.reject(error);
-}); */
