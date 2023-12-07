@@ -142,7 +142,9 @@
 
 <script>
 import MailAgain from './MailAgain.vue';
-import axios from "axios"
+import { createUser } from '../fetch/fetchUser';
+import { loginUser } from "../fetch/fetchLogin";
+import { loginToken } from "../fetch/fetchToken";
 import router from '../router';
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css"
@@ -250,127 +252,46 @@ export default {
         this.place = "",
         this.terms = ""
     },
-    onSubmit(event) {
+    async onSubmit(event) {
       event.preventDefault()
-      let ax;
-      if (import.meta.env.VITE_API_BASEURLPORT === "8000") {
-        const params = new URLSearchParams();
-        params.append('email', this.email);
-        params.append('passwort', this.passwort);
-        ax =
-          axios(
-            {
-              method: 'post',
-              url: import.meta.env.VITE_API_LOGIN_API_KEY,
-              data: params
-            })
-      } else {
-        ax = axios.post(import.meta.env.VITE_API_LOGIN_API_KEY,
-          {
-            email: this.email,
-            passwort: this.passwort
-          })
-      }
-
-      ax.then(response => {
-        /* set respons in sessionStorage */
-
-        /* check if user has already confirmed the email */
-        if (response.data.isConfirmed === 1 || response.data.isConfirmed === true) {
-
-          if (response.data.statuscode === 200) {
-            sessionStorage.setItem('session', response.data.sessionToken)
-            sessionStorage.setItem('id', response.data.userID)
-            sessionStorage.setItem('refresh', response.data.refreshToken)
-            this.setOpenClose()
-            toast.success("Welcome " + response.data.email, {
-              autoClose: 3000
-            }),
-              setTimeout(() => router.push("/about"), 3000)
-          } else {
-            toast.error("Sorry, something went wrong", {
-              autoClose: 3000
-            })
-          }
-        } else {
-          toast.error("Please verify your email first", {
+      let response = await loginUser(this.email, this.passwort);
+      if (response.isConfirmed === true) {
+        if (response.statuscode === 200) {
+          sessionStorage.setItem('id', response.userID)
+          await loginToken(this.email, this.passwort);
+          this.setOpenClose()
+          toast.success("Welcome " + response.email, {
             autoClose: 3000
-          })
-        }
-      }).catch(e => {
-        console.log(e)
-        if (e.response.status === 401) {
-          toast.error("Please registry your email first", {
-            autoClose: 3000
-          })
+          }),
+            setTimeout(() => router.push("/about"))
         } else {
           toast.error("Sorry, something went wrong", {
             autoClose: 3000
           })
         }
-
-      });
-    },
-    onSubmitRegistration(event) {
-      event.preventDefault()
-
-
-      let ax;
-      if (import.meta.env.VITE_API_BASEURLPORT === "8000") {
-        const params = new URLSearchParams();
-        params.append('email', this.email);
-        params.append('passwort', this.passwort);
-        params.append('name', this.name);
-        params.append('telefon', this.telefon);
-        params.append('postcode', this.postcode);
-        params.append('place', this.place);
-        params.append('terms', this.terms);
-
-        ax =
-          axios(
-            {
-              method: 'post',
-              url: import.meta.env.VITE_API_USER_API_KEY,
-              data: params
-            })
       } else {
-        ax = axios.post(import.meta.env.VITE_API_USER_API_KEY,
-          {
-            email: this.email,
-            passwort: this.passwort,
-            name: this.name,
-            telefon: this.telefon,
-            postcode: this.postcode,
-            place: this.place,
-            terms: this.terms,
-          })
+        toast.error("Please verify your email first", {
+          autoClose: 3000
+        })
       }
 
 
-      ax.then(response => {
-        if (response.data.statuscode === 201) {
-          toast.success("Thank You, we send an email to " + this.email, {
-            autoClose: 3000
-          })
-          this.setOpenClose()
-        } else {
-          toast.error("Sorry we can not send an email to " + this.email, {
-            autoClose: 3000
-          })
-        }
 
-      }).catch(e => {
+    },
+    async onSubmitRegistration(event) {
+      event.preventDefault()
 
-        if (e.response.data.code === "23000") {
-          toast.error(this.email + " is allready in Use", {
-            autoClose: 3000
-          })
-        } else {
-          toast.error("We can not send an email to: " + this.email, {
-            autoClose: 3000
-          })
-        }
-      });
+      const response = await createUser(this.email, this.passwort, this.name, this.telefon, this.postcode, this.place, this.terms)
+      if (response.statuscode === 201) {
+        toast.success("Thank You, we send an email to " + this.email, {
+          autoClose: 3000
+        })
+        this.setOpenClose()
+      } else {
+        toast.error("Sorry we can not send an email to " + this.email, {
+          autoClose: 3000
+        })
+      }
     },
 
   },

@@ -122,13 +122,12 @@
 
 
 <script>
-
-import axios from "axios"
 import router from "../router";
 import Navbar from "./Navbar.vue";
 import BackButton from "./BackButton.vue";
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css"
+import { searchUser, searchUserCounter } from "../fetch/fetchSearch";
 
 export default {
   name: "listSearchPersons",
@@ -155,91 +154,24 @@ export default {
     this.getDatas();
   },
   methods: {
-    getDatas: function () {
-
-      let ax;
-      if (import.meta.env.VITE_API_BASEURLPORT === "8000") {
-        const params = new URLSearchParams();
-        params.append('offset', 0);
-        params.append('orderBy', this.orderBy !== "" ? this.orderBy : "email");
-        params.append('sc', this.sc == true ? "asc" : "desc");
-        params.append('email', this.email !== undefined ? this.email : "");
-        params.append('name', this.name !== undefined ? this.name : "");
-        params.append('place', this.place !== undefined ? this.place : "");
-        params.append('postcode', this.postcode !== undefined ? this.postcode : "");
-        params.append('telefon', this.telefon !== undefined ? this.telefon : "");
-        ax =
-          axios(
-            {
-              method: 'post',
-              url: import.meta.env.VITE_API_SEARCHCOUNTER_API_KEY,
-              data: params
-            })
-      } else {
-        ax = axios.post(import.meta.env.VITE_API_SEARCHCOUNTER_API_KEY, {
-          offset: 0,
-          orderBy: this.orderBy !== "" ? this.orderBy : "email",
-          sc: this.sc == true ? "asc" : "desc",
-          email: this.email,
-          name: this.name,
-          place: this.place,
-          postcode: this.postcode,
-          telefon: this.telefon
-        })
-      }
-
-
-      let axSearch;
-      if (import.meta.env.VITE_API_BASEURLPORT === "8000") {
-        const params = new URLSearchParams();
-        params.append('offset', this.offset);
-        params.append('orderBy', this.orderBy !== "" ? this.orderBy : "email");
-        params.append('sc', this.sc == true ? "asc" : "desc");
-        params.append('email', this.email !== undefined ? this.email : "");
-        params.append('name', this.name !== undefined ? this.name : "");
-        params.append('place', this.place !== undefined ? this.place : "");
-        params.append('postcode', this.postcode !== undefined ? this.postcode : "");
-        params.append('telefon', this.telefon !== undefined ? this.telefon : "");
-        axSearch =
-          axios(
-            {
-              method: 'post',
-              url: import.meta.env.VITE_API_SEARCH_API_KEY,
-              data: params
-            })
-      } else {
-        axSearch = axios.post(import.meta.env.VITE_API_SEARCH_API_KEY, {
-          offset: this.offset,
-          orderBy: this.orderBy !== "" ? this.orderBy : "email",
-          sc: this.sc == true ? "asc" : "desc",
-          email: this.email,
-          name: this.name,
-          place: this.place,
-          postcode: this.postcode,
-          telefon: this.telefon
-        })
-      }
-
-      ax.then(response => {
-        this.userCount = response.data.result;
-        this.getTabCount(response.data.result)
-        if (response.data.result == 0) {
-          toast.error("The search returned no results", {
-            autoClose: 3000
-          })
-        }
-      }).catch(e => { console.log(e); });
-
+    getDatas: async function () {
       /* Search */
-      axSearch.then(response => {
-        console.log(response)
-        this.userData = response.data.result;
+      const response = await searchUser(this.offset, this.orderBy, this.sc, this.email, this.name, this.place, this.postcode, this.telefon)
+      this.userData = response;
 
-      }).catch(e => { console.log(e); });
+      /* SearchCounter */
+      const responseCounter = await searchUserCounter(this.orderBy, this.sc, this.email, this.name, this.place, this.postcode, this.telefon)
+      this.userCount = responseCounter.result;
+      this.getTabCount(responseCounter.result)
+      if (responseCounter.result == 0) {
+        toast.error("The search returned no results", {
+          autoClose: 3000
+        })
+      }
     },
-    clickList: function (id) {
+    /* clickList: function (id) {
       router.push("changeuserdata/" + id);
-    },
+    }, */
     clickHeader: function (name) {
       this.sc = !this.sc;
       this.orderBy = name;

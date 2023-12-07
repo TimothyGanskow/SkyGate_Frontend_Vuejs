@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import { refreshToken } from "../fetch/fetchToken";
 
 /* axios interceptor for passing default header and using deault url */
 
@@ -24,17 +24,12 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(resp => resp, async error => {
     if (error.response.status === 401) {
         if (sessionStorage.getItem("refresh")) {
-            const { status, data } = await axios.post(import.meta.env.VITE_API_REFRESH_API_KEY, {
-                token: sessionStorage.getItem("refresh")
-            }).then(
-                response => { sessionStorage.setItem('session', response.data.sessionToken) }
-            ).catch(e => { console.log(e) })
-
+            await refreshToken(sessionStorage.getItem("refresh"))
             /* If sessionToken -> put it back in sessionStorage and send the request again */
-            if (status === 200) {
+            try {
                 axios.defaults.headers.common["Authorization"] = `Bearer ${sessionStorage.getItem("session")}`
                 return axios(error.config);
-            } else {
+            } catch (e) {
                 sessionStorage.clear();
             }
         }

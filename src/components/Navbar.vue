@@ -47,9 +47,8 @@
 </template>
 
 <script>
-import LoginModal from './LoginModal.vue';
-import axios from 'axios';
 import router from '../router';
+import LoginModal from "../components/LoginModal.vue";
 import { RouterLink, RouterView } from 'vue-router';
 export default {
   name: "Navbar",
@@ -62,13 +61,8 @@ export default {
   }, methods: {
     loggout(event) {
       event.preventDefault()
-      axios.post(import.meta.env.VITE_API_LOGGOUT_API_KEY + "/" + this.userID).then(response => {
-        if (response.status === 200) {
-          router.push("/");
-          sessionStorage.clear()
-        }
-
-      }).catch(e => { console.log(e) });
+      router.push("/");
+      sessionStorage.clear()
     }
   }
 }

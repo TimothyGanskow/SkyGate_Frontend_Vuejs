@@ -114,14 +114,14 @@
 
 
         <!-- Set Permission -->
-        <div v-if="item.permission > 2" :readonly="item.permission == 1" class="form-group col-md-4"
-          style="padding:10px;">
-          <label for="inputState" style="color: white">Permission</label>
+        <div v-if="this.myPermission[0] == 'ROLE_SUPER_ADMIN'" :readonly="this.myPermission[0] == 'ROLE_USER'"
+          class="form-group col-md-4" style="padding:10px;">
+          <label for="inputState" style="color: white;">Permission</label>
           <select id="inputState" class="form-control" v-model="permission">
-            <option value="" selected>{{ this.getPermissionAsString(item.permission) }}</option>
-            <option value="1">Standartuser</option>
-            <option value="2">Superuser</option>
-            <option value="3">Administrator</option>
+            <option value="" selected>{{ item.permission[0] }}</option>
+            <option value="1">ROLE_USER</option>
+            <option value="2">ROLE_ADMIN</option>
+            <option value="3">ROLE_SUPER_ADMIN</option>
           </select>
         </div>
 
@@ -132,7 +132,7 @@
       </form>
 
       <!-- Open the Delete Modal to delete yourself -->
-      <div v-if="item.permission > 2">
+      <div v-if="this.myPermission[0] == 'ROLE_SUPER_ADMIN'">
         <DeleteUserModal :visible="false" :userEmail="item.email" :id="item.id" />
 
       </div>
@@ -143,8 +143,6 @@
 
 
 <script>
-
-import axios from "axios"
 import router from '../router/index.js';
 import Navbar from "./Navbar.vue";
 import BackButton from "./BackButton.vue";
@@ -153,6 +151,8 @@ import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css"
 import useVuelidate from '@vuelidate/core'
 import { required, email, minLength, sameAs } from '@vuelidate/validators'
+import { getUserByID } from "../fetch/fetchUser";
+import { patchUser } from "../fetch/fetchUser";
 
 /* Verstoß gegen never repeat yourself */
 /* validate a Name -> No Number and no special character exept spaace and dash */
@@ -223,7 +223,7 @@ export default {
       myPermission: ""
     };
   },
-  beforeMount() {
+  async beforeMount() {
     /* Check if user has a session -> if not push user out */
     if (!sessionStorage.getItem("session")) {
       router.push("/")
@@ -231,78 +231,47 @@ export default {
 
     /* Fill a Array with userdata */
     const id = sessionStorage.getItem("id");
-    axios.get(import.meta.env.VITE_API_USER_API_KEY + "/" + id).then(response => {
-      this.myPermission = response.data.permission
-      this.userData.push(response.data);
-    }).catch(e => { console.log(e); });
+    const responsePermission = await getUserByID(id);
+    this.myPermission = responsePermission.permission;
+    this.userData.push(responsePermission);
+
+
   },
   methods: {
-    onSubmit(event) {
+    async onSubmit(event) {
       const id = sessionStorage.getItem("id");
       event.preventDefault();
 
-
-      let ax;
-      if (import.meta.env.VITE_API_BASEURLPORT === "8000") {
-        const params = new URLSearchParams();
-        params.append('email', this.email);
-        params.append('passwort', this.passwort);
-        params.append('name', this.name);
-        params.append('telefon', this.telefon);
-        params.append('postcode', this.postcode);
-        params.append('place', this.place);
-        params.append('permission', this.permission);
-        params.append('terms', this.terms);
-
-        ax =
-          axios(
-            {
-              method: 'patch',
-              url: import.meta.env.VITE_API_USER_API_KEY + "/" + id,
-              data: params
-            })
-      } else {
-        ax = axios.patch(import.meta.env.VITE_API_USER_API_KEY + "/" + id, {
-          email: this.email,
-          passwort: this.passwort,
-          name: this.name,
-          telefon: this.telefon,
-          postcode: this.postcode,
-          place: this.place,
-          permission: this.permission
-        })
+      let perm
+      if (this.permission === "1") {
+        perm = "ROLE_USER"
       }
-
-
-      if (this.passwort === this.passwortAgain) {
-        ax.then(response => {
-          if (response.status === 200) {
-            toast.success(this.email + " erfolgreich geupdatet", {
-              autoClose: 3000
-            },
-              router.push("/personlist")
-            )
-          }
-          else {
-            toast.success(this.email + " erfolgreich geupdatet", {
-              autoClose: 3000
-            },
-              router.push("/personlist"))
-          }
-        }).catch(e => {
-          if (e.response.data.code === "23000") {
-            toast.error(this.email + " is allready in Use", {
-              autoClose: 3000
-            })
-          }
-          if (e.response.data.errors[0]) {
-            toast.error(e.response.data.errors[0], {
-              autoClose: 3000
-            })
-          }
-        });
+      if (this.permission === "2") {
+        perm = "ROLE_ADMIN"
+      }
+      if (this.permission === "3") {
+        perm = "ROLE_SUPER_ADMIN"
+      }
+      /* Make the request */
+      const response = await patchUser(id, this.email, this.passwort, this.name, this.telefon, this.postcode, this.place, perm);
+      /* Check the response */
+      if (response.status === 200) {
+        /* response.status === 200 open a toast succes and push the User back to the personlist */
+        toast.success(this.email + " erfolgreich geupdatet", {
+          autoClose: 3000
+        },
+          setTimeout(() => router.push("/personlist"), 3000)
+        )
+      }
+      else {
+        /* else open a toast error and push the User back to the personlist*/
+        toast.error(this.email + "Sorry something went wrong", {
+          autoClose: 3000
+        },
+          router.push("/personlist"))
       }
     },
+
     /* Helpfunction to get a String to the permissionCode */
     getPermissionAsString(perm) {
       let permCode;

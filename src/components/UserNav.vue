@@ -95,8 +95,7 @@
 
 
 <script>
-import axios from "axios"
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import router from '../router';
 import Navbar from "./Navbar.vue";
 export default {
@@ -116,16 +115,9 @@ export default {
     },
     loggout(event) {
       event.preventDefault()
-      axios.post(import.meta.env.VITE_API_LOGGOUT_API_KEY + "/" + this.userID).then(response => {
-        sessionStorage.clear('session')
-        if (response.status === 200) {
           this.setOpenClose()
           router.push("/");
           sessionStorage.clear()
-
-        }
-
-      }).catch(e => { console.log(e) });
     }
 
   },

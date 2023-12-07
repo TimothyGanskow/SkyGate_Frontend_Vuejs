@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import axios from "axios"
+import { deleteUser } from "../fetch/fetchUser"
 import router from '../router/index.js';
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css"
@@ -55,33 +55,33 @@ export default {
     setOpenClose() {
       this.openClose = !this.openClose;
     },
-    deleteUser() {
-      console.log(this.userID)
-      axios.delete(import.meta.env.VITE_API_USER_API_KEY + "/" + this.userID).then(response => {
-        this.setOpenClose()
-        console.log(response)
-        if (response.data.code === 202) {
-          toast.success(this.email + " erfolgreich gelöscht", {
-            autoClose: 3000
-          })
+    async deleteUser() {
 
-          if (sessionStorage.getItem("id").toString() === this.userID.toString()) {
-            setTimeout(() => router.push("/"), 3000),
-              this.setOpenClose()
-            sessionStorage.clear()
-          } else {
-            setTimeout(() => router.push("/personlist"), 3000),
-              this.setOpenClose()
-          }
-        } else {
-          toast.error("Sorry something went wrong", {
-            autoClose: 3000
-          },
-            /*  setTimeout(() => router.push("/personlist"), 3000), */
+
+      const response = await deleteUser(this.userID);
+      console.log(response)
+      if (response.code === 202) {
+        this.setOpenClose()
+        toast.success(this.email + " erfolgreich gelöscht", {
+          autoClose: 3000
+        })
+
+        if (sessionStorage.getItem("id").toString() === this.userID.toString()) {
+          setTimeout(() => router.push("/"), 3000),
             this.setOpenClose()
-          )
+          sessionStorage.clear()
+        } else {
+          setTimeout(() => router.push("/personlist"), 3000),
+            this.setOpenClose()
         }
-      }).catch(e => { console.log(e); });
+      } else {
+        toast.error("Sorry something went wrong", {
+          autoClose: 3000
+        },
+          /*  setTimeout(() => router.push("/personlist"), 3000), */
+          this.setOpenClose()
+        )
+      }
     },
 
   },

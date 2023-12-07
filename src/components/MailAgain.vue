@@ -40,9 +40,7 @@
 </template>
 
 <script>
-import login from '../../fetches/login.js';
-import axios from "axios"
-import router from '../router/index.js';
+import {mailAgain} from "../fetch/fetchMail"
 import { toast } from "vue3-toastify";
 import "vue3-toastify/dist/index.css"
 import useVuelidate from '@vuelidate/core'
@@ -75,55 +73,24 @@ export default {
       this.email = ""
     },
 
-    onSubmit(event) {
+    async onSubmit(event) {
       event.preventDefault()
 
-      let ax;
-      if (import.meta.env.VITE_API_BASEURLPORT === "8000") {
-        const params = new URLSearchParams();
-        params.append('email', this.email);
-        ax =
-          axios(
-            {
-              method: 'post',
-              url: import.meta.env.VITE_API_MAILAGAIN_API_KEY,
-              data: params
-            })
+      const response = await mailAgain(this.email)
+      console.log(response.code)
+
+      if (response.code === "202") {
+        toast.success("Thank You, we send an email to " + this.email, {
+          autoClose: 3000
+        })
+        this.setOpenClose()
       } else {
-        ax = axios.post(import.meta.env.VITE_API_MAILAGAIN_API_KEY,
-        {
-          email: this.email,
+        toast.error("We can not send an email to: " + this.email, {
+          autoClose: 3000
         })
       }
 
-
-
-      ax.then(response => {
-          if (response.status === 201) {
-            toast.success("Thank You, we send an email to " + this.email, {
-              autoClose: 3000
-            })
-            this.setOpenClose()
-          } else {
-            toast.success("Thank You, we send an email to " + this.email, {
-              autoClose: 3000
-            })
-          }
-
-        }).catch(e => {
-
-          if (e.response.data.code === "23000") {
-            toast.error(this.email + " is allready Varified", {
-              autoClose: 3000
-            })
-          } else {
-            toast.error("We can not send an email to: " + this.email, {
-              autoClose: 3000
-            })
-          }
-        });
-    },
-
+    }
   },
 
   computed: {
